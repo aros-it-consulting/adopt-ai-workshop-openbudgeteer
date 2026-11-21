@@ -9,13 +9,19 @@ public class GenericBankTransactionService : GenericBaseService<BankTransaction>
 {
     private readonly IBankTransactionRepository _bankTransactionRepository;
     private readonly IBudgetedTransactionRepository _budgetedTransactionRepository;
+    private readonly ITransactionTagRepository _transactionTagRepository;
+    private readonly GenericTagService _tagService;
     
     public GenericBankTransactionService(
         IBankTransactionRepository bankTransactionRepository, 
-        IBudgetedTransactionRepository budgetedTransactionRepository) : base(bankTransactionRepository)
+        IBudgetedTransactionRepository budgetedTransactionRepository,
+        ITransactionTagRepository transactionTagRepository,
+        GenericTagService tagService) : base(bankTransactionRepository)
     {
         _bankTransactionRepository = bankTransactionRepository;
         _budgetedTransactionRepository = budgetedTransactionRepository;
+        _transactionTagRepository = transactionTagRepository;
+        _tagService = tagService;
     }
 
     public BankTransaction GetWithEntities(Guid id)
@@ -66,8 +72,17 @@ public class GenericBankTransactionService : GenericBaseService<BankTransaction>
         return newTransactions;
     }
 
+    public override BankTransaction Create(BankTransaction entity)
+    {
+        entity.TransactionTags = BuildTransactionTags(entity);
+        return base.Create(entity);
+    }
+
     public override BankTransaction Update(BankTransaction entity)
     {
+        // Without passed Tags (e.g. an API call), the Tags of the Transaction are kept as they are
+        if (entity.TransactionTags is not null) ReplaceTransactionTags(entity);
+
         if (entity.BudgetedTransactions is not null && entity.BudgetedTransactions.Any())
         {
             // Delete all existing bucket assignments, as they will be replaced by passed assignments
@@ -95,6 +110,33 @@ public class GenericBankTransactionService : GenericBaseService<BankTransaction>
         _bankTransactionRepository.Update(entity);
             
         return entity;
+    }
+
+    private void ReplaceTransactionTags(BankTransaction entity)
+    {
+        // Resolve Tags before deleting anything, so that an invalid Tag name keeps the current Tags
+        var transactionTags = BuildTransactionTags(entity);
+        var deletedIds = _transactionTagRepository.All()
+            .Where(transactionTag => transactionTag.TransactionId == entity.Id)
+            .Select(transactionTag => transactionTag.Id)
+            .ToList();
+        if (deletedIds.Count != 0 && _transactionTagRepository.DeleteRange(deletedIds) != deletedIds.Count)
+            throw new EntityUpdateException("Unable to delete old Tags of that Transaction");
+
+        entity.TransactionTags = transactionTags;
+    }
+
+    /// <summary>
+    /// Tags are passed by name, so that a Transaction can be tagged with a Tag which doesn't exist yet
+    /// </summary>
+    private List<TransactionTag>? BuildTransactionTags(BankTransaction entity)
+    {
+        if (entity.TransactionTags is null) return null;
+
+        var tagNames = entity.TransactionTags.Select(transactionTag => transactionTag.Tag?.Name);
+        return _tagService.GetOrCreate(tagNames)
+            .Select(tag => new TransactionTag { TransactionId = entity.Id, TagId = tag.Id })
+            .ToList();
     }
 
     public override void Delete(Guid id)

@@ -48,6 +48,12 @@
                               Label="Memo"/>
             </MudItem>
 
+            <!-- Tags -->
+            <MudItem xs="12">
+                <TagEditor DataContext="DataContext"
+                           AvailableTags="AvailableTags"/>
+            </MudItem>
+
             <!-- Amount -->
             <MudItem xs="12">
                 <MudNumericField T="decimal"
@@ -139,6 +145,9 @@
 
     [Parameter]
     public TransactionViewModel DataContext { get; set; } = null!;
+
+    [Parameter]
+    public IReadOnlyList<string> AvailableTags { get; set; } = [];
 
     void ConfirmCreate() => MudDialog.Close(DialogResult.Ok(CreateDialogResponse.Create));
     void ConfirmCreateAnother() => MudDialog.Close(DialogResult.Ok(CreateDialogResponse.CreateAnother));

@@ -13,6 +13,7 @@ public interface IServiceManager
     IBudgetedTransactionService BudgetedTransactionService { get; }
     IImportProfileService ImportProfileService { get; }
     IRecurringBankTransactionService RecurringBankTransactionService { get; }
+    ITagService TagService { get; }
 
     public ILogger CreateLogger(Type type);
 }

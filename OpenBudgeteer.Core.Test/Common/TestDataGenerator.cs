@@ -259,4 +259,19 @@ public class TestDataGenerator
     }
 
     #endregion
+
+    #region Tag
+
+    public Tag GenerateTag() => GenerateTag(null);
+
+    public Tag GenerateTag(int? seed)
+    {
+        var random = seed is not null ? new Random((int)seed) : new Random();
+        return new Tag()
+        {
+            Name = GenerateRandomString(random)
+        };
+    }
+
+    #endregion
 }

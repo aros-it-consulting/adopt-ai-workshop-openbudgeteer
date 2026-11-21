@@ -17,6 +17,8 @@ public class MockDatabase
     public Dictionary<Guid, ImportProfile> ImportProfiles { get; } = new();
     public Dictionary<Guid, MappingRule> MappingRules { get; } = new();
     public Dictionary<Guid, RecurringBankTransaction> RecurringBankTransactions { get; } = new();
+    public Dictionary<Guid, Tag> Tags { get; } = new();
+    public Dictionary<Guid, TransactionTag> TransactionTags { get; } = new();
 
     public void Cleanup()
     {
@@ -31,5 +33,7 @@ public class MockDatabase
         ImportProfiles.Clear();
         MappingRules.Clear();
         RecurringBankTransactions.Clear();
+        Tags.Clear();
+        TransactionTags.Clear();
     }
 }

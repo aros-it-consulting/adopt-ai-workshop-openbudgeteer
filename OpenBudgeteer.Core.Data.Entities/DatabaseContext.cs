@@ -16,6 +16,8 @@ public class DatabaseContext : DbContext
     public DbSet<ImportProfile> ImportProfile { get; set; }
     public DbSet<BucketRuleSet> BucketRuleSet { get; set; }
     public DbSet<MappingRule> MappingRule { get; set; }
+    public DbSet<Tag> Tag { get; set; }
+    public DbSet<TransactionTag> TransactionTag { get; set; }
     
     public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
     

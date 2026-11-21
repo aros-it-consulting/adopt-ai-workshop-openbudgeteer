@@ -34,6 +34,9 @@ public class EFCoreServiceManager : IServiceManager
     public IRecurringBankTransactionService RecurringBankTransactionService => 
         new EFCoreRecurringBankTransactionService(_dbContextFactory, new Logger<EFCoreRecurringBankTransactionService>(_loggerFactory));
 
+    public ITagService TagService =>
+        new EFCoreTagService(_dbContextFactory, new Logger<EFCoreTagService>(_loggerFactory));
+
     private readonly IDbContextFactory<DatabaseContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     

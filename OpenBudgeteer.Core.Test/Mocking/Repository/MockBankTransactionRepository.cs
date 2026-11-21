@@ -36,6 +36,7 @@ public class MockBankTransactionRepository : IBankTransactionRepository
             {
                 transaction.BudgetedTransactions.Add(budgetedTransaction); 
             }
+            IncludeTransactionTags(transaction);
         }
 
         return transactions.AsQueryable();
@@ -62,6 +63,7 @@ public class MockBankTransactionRepository : IBankTransactionRepository
         {
             transaction.BudgetedTransactions.Add(budgetedTransaction); 
         }
+        IncludeTransactionTags(transaction);
         return transaction;
     }
 
@@ -69,6 +71,7 @@ public class MockBankTransactionRepository : IBankTransactionRepository
     {
         entity.Id = Guid.NewGuid();
         _mockDatabase.BankTransactions[entity.Id] = entity;
+        SaveTransactionTags(entity);
         return 1;
     }
 
@@ -82,6 +85,7 @@ public class MockBankTransactionRepository : IBankTransactionRepository
         try
         {
             _mockDatabase.BankTransactions[entity.Id] = entity;
+            SaveTransactionTags(entity);
             return 1;
         }
         catch (Exception e)
@@ -112,5 +116,30 @@ public class MockBankTransactionRepository : IBankTransactionRepository
     public int DeleteRange(IEnumerable<Guid> ids)
     {
         return ids.Sum(Delete);
+    }
+
+    private void IncludeTransactionTags(BankTransaction transaction)
+    {
+        var mockTagRepository = new MockTagRepository(_mockDatabase);
+        transaction.TransactionTags = _mockDatabase.TransactionTags.Values
+            .Where(transactionTag => transactionTag.TransactionId == transaction.Id)
+            .ToList();
+        foreach (var transactionTag in transaction.TransactionTags)
+        {
+            transactionTag.Tag = mockTagRepository.ById(transactionTag.TagId)
+                                 ?? throw new Exception("Tag doesn't exist");
+        }
+    }
+
+    // Like EF Core, which stores the Tag assignments passed along with the Transaction
+    private void SaveTransactionTags(BankTransaction transaction)
+    {
+        var mockTransactionTagRepository = new MockTransactionTagRepository(_mockDatabase);
+        foreach (var transactionTag in transaction.TransactionTags ?? [])
+        {
+            transactionTag.TransactionId = transaction.Id;
+            if (transactionTag.Id == Guid.Empty) transactionTag.Id = Guid.NewGuid();
+            mockTransactionTagRepository.Update(transactionTag);
+        }
     }
 }

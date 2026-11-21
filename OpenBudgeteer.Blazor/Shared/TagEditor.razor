@@ -1,0 +1,73 @@
+@using System.Threading
+@using OpenBudgeteer.Core.Data.Entities.Models
+@using OpenBudgeteer.Core.ViewModels.EntityViewModels
+
+<MudStack Spacing="1">
+
+    <!-- Assigned Tags -->
+    <MudStack Row
+              Spacing="1"
+              Wrap="Wrap.Wrap">
+        @foreach (var tag in DataContext.Tags)
+        {
+            <MudChip T="string"
+                     OnClose="@(() => DataContext.RemoveTag(tag))"
+                     Size="Size.Small"
+                     Text="@tag"/>
+        }
+    </MudStack>
+
+    <!-- New Tag: pick an existing Tag or create one from the typed text -->
+    <!-- No MaxItems limit: the "New Tag" entry comes last and would be cut off after 10 matching Tags -->
+    <MudAutocomplete T="string"
+                     @ref="_tagInput"
+                     SearchFunc="SearchTagsAsync"
+                     ValueChanged="AddTagAsync"
+                     Dense="true"
+                     Margin="Margin.Dense"
+                     MaxItems="null"
+                     MaxLength="Tag.NameMaxLength"
+                     Placeholder="Add Tag">
+        <ItemTemplate>
+            @(IsNewTag(context) ? $"New Tag: {context}" : context)
+        </ItemTemplate>
+    </MudAutocomplete>
+</MudStack>
+
+@code {
+    [Parameter]
+    public TransactionViewModel DataContext { get; set; } = null!;
+
+    /// <summary>
+    /// Names of all existing Tags, suggested while typing
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<string> AvailableTags { get; set; } = [];
+
+    private MudAutocomplete<string> _tagInput = null!;
+
+    private Task<IEnumerable<string>> SearchTagsAsync(string? searchText, CancellationToken cancellationToken)
+    {
+        var typedTagName = searchText?.Trim() ?? string.Empty;
+        var suggestions = AvailableTags
+            .Where(tag => !DataContext.Tags.Contains(tag))
+            .Where(tag => tag.Contains(typedTagName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        // Listed after the existing Tags, so that reusing an existing Tag stays the first choice
+        if (typedTagName != string.Empty && IsNewTag(typedTagName)) suggestions.Add(typedTagName);
+        return Task.FromResult<IEnumerable<string>>(suggestions);
+    }
+
+    private bool IsNewTag(string tagName)
+    {
+        return !AvailableTags.Contains(tagName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task AddTagAsync(string? tagName)
+    {
+        // Clearing the input raises ValueChanged again, with an empty value
+        if (string.IsNullOrWhiteSpace(tagName)) return;
+        DataContext.AddTag(tagName);
+        await _tagInput.ClearAsync();
+    }
+}

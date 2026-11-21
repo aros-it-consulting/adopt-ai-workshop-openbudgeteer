@@ -1,5 +1,6 @@
 @page "/settings"
 @attribute [Authorize]
+@using OpenBudgeteer.Core.Data.Entities.Models
 
 <!-- Setting Tabs -->
 <MudTabs Elevation="2"
@@ -314,6 +315,61 @@
                 </MudStack>
             </MudItem>
         </MudGrid>
+    </MudTabPanel>
+
+    <!-- Tags Tab -->
+    <MudTabPanel Icon="@Icons.Material.Filled.LocalOffer"
+                 Text="Tags">
+        @if (_tagListingDataContext.Tags.Count == 0)
+        {
+            <MudText Typo="Typo.body2">
+                No Tag yet. Tags are created while tagging Transactions on the Transaction page.
+            </MudText>
+        }
+        else
+        {
+            <MudSimpleTable Dense="true"
+                            Hover="true"
+                            Style="max-width: 800px">
+                <thead>
+                    <tr>
+                        <th>Tag</th>
+                        <th>Transactions</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tag in _tagListingDataContext.Tags)
+                    {
+                        <tr>
+                            <td>
+                                <MudTextField @bind-Value="tag.Name"
+                                              Margin="Margin.Dense"
+                                              MaxLength="Tag.NameMaxLength"/>
+                            </td>
+                            <td>@tag.TransactionCount</td>
+                            <td>
+                                <MudStack Row
+                                          Spacing="2">
+                                    <MudButton OnClick="@(() => RenameTagAsync(tag))"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               Variant="Variant.Filled">
+                                        Rename
+                                    </MudButton>
+                                    <MudButton OnClick="@(() => DeleteTagAsync(tag))"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Variant="Variant.Filled">
+                                        Delete
+                                    </MudButton>
+                                </MudStack>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
     </MudTabPanel>
 </MudTabs>
 
