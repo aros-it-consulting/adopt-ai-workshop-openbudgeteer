@@ -20,6 +20,14 @@ public class GenericTagService : GenericBaseService<Tag>, ITagService
     public override IEnumerable<Tag> GetAll()
     {
         return _tagRepository
+            .All()
+            .OrderBy(tag => tag.Name)
+            .ToList();
+    }
+
+    public IEnumerable<Tag> GetAllWithEntities()
+    {
+        return _tagRepository
             .AllWithIncludedEntities()
             .OrderBy(tag => tag.Name)
             .ToList();
@@ -72,7 +80,8 @@ public class GenericTagService : GenericBaseService<Tag>, ITagService
 
     private Tag? FindByName(string name)
     {
-        var lowerName = name.ToLower();
+        // Invariant like the LOWER() of the database: with a Turkish culture, ToLower() turns "I" into a dotless "ı"
+        var lowerName = name.ToLowerInvariant();
         return _tagRepository
             .All()
             .FirstOrDefault(tag => tag.Name.ToLower() == lowerName);

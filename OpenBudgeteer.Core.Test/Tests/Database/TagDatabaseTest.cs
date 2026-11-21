@@ -4,6 +4,7 @@ using System.Linq;
 using OpenBudgeteer.Core.Data.Contracts.Repositories;
 using OpenBudgeteer.Core.Data.Entities.Models;
 using OpenBudgeteer.Core.Data.Repository;
+using OpenBudgeteer.Core.Data.Services.Generic;
 using OpenBudgeteer.Core.Test.Common;
 using OpenBudgeteer.Core.Test.Mocking;
 using OpenBudgeteer.Core.Test.Mocking.Repository;
@@ -145,5 +146,24 @@ public class TagDatabaseTest : BaseDatabaseTest<Tag>
         Assert.Equal([keptTag.Id], tagRepository.All().Select(tag => tag.Id));
         Assert.Equal([keptTransactionTag.Id], transactionTagRepository.All().Select(transactionTag => transactionTag.Id));
         Assert.Equal(2, bankTransactionRepository.All().Count());
+    }
+
+    [Fact]
+    public void GetAll_LeavesOutTheAssignmentsLoadedByGetAllWithEntities()
+    {
+        var databaseContext = GetInMemoryContext();
+        var tagRepository = new TagRepository(databaseContext);
+        var account = TestDataGenerator.Current.GenerateAccount();
+        new AccountRepository(databaseContext).Create(account);
+        var transaction = TestDataGenerator.Current.GenerateBankTransaction(account);
+        new BankTransactionRepository(databaseContext).Create(transaction);
+        var tag = TestDataGenerator.Current.GenerateTag();
+        tagRepository.Create(tag);
+        var transactionTag = new TransactionTag { TransactionId = transaction.Id, TagId = tag.Id };
+        new TransactionTagRepository(databaseContext).Create(transactionTag);
+        var tagService = new GenericTagService(tagRepository);
+
+        Assert.Null(tagService.GetAll().Single().TransactionTags);
+        Assert.Single(tagService.GetAllWithEntities().Single().TransactionTags!);
     }
 }

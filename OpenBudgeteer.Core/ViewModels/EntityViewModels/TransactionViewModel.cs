@@ -491,7 +491,7 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
     {
         if (string.IsNullOrWhiteSpace(tagName)) return;
         var cleanTagName = tagName.Trim();
-        if (Tags.Contains(cleanTagName, StringComparer.CurrentCultureIgnoreCase)) return;
+        if (Tags.Contains(cleanTagName, StringComparer.OrdinalIgnoreCase)) return;
         Tags.Add(cleanTagName);
     }
 
@@ -705,7 +705,11 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         {
             Buckets.Add(bucket);
         }
-        Tags = _oldTransactionViewModelItem.Tags;
+        Tags.Clear();
+        foreach (var tag in _oldTransactionViewModelItem.Tags)
+        {
+            Tags.Add(tag);
+        }
         InModification = false;
         _oldTransactionViewModelItem = null;
     }

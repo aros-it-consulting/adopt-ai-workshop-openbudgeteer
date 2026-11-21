@@ -4,4 +4,5 @@ namespace OpenBudgeteer.Core.Data.Contracts.Services;
 
 public interface ITagService : IBaseService<Tag>
 {
+    public IEnumerable<Tag> GetAllWithEntities();
 }

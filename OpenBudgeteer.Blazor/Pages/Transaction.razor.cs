@@ -146,6 +146,8 @@ public partial class Transaction : ComponentBase
                     if (createDialogResult.Data is CreateDialogResponse.CreateAnother)
                     {
                         lastEnteredDate = _createTransactionDataContext.TransactionDate;
+                        // The page is only reloaded after the last one: suggest the Tags created so far
+                        await HandleResult(_dataContext.LoadAvailableTags());
                         continue;
                     }
                 }
@@ -316,10 +318,6 @@ public partial class Transaction : ComponentBase
     {
         _isEditModeEnabled = false;
         await HandleResult(_dataContext.SaveAllTransaction());
-
-        // Tags created by this save become suggestions and filter items without reloading the page
-        await HandleResult(_dataContext.LoadAvailableTags());
-        ResetTagFilter();
     }
 
     private async Task CancelAllTransaction()

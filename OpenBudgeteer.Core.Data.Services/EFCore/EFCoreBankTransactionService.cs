@@ -31,6 +31,31 @@ public class EFCoreBankTransactionService : EFCoreBaseService<BankTransaction>, 
             new GenericTagService(new TagRepository(dbContext)));
     }
 
+    public override BankTransaction Create(BankTransaction entity)
+    {
+        // New Tags are created before the Transaction: they must not stay behind if the Transaction is not created
+        using var dbContext = _dbContextFactory.CreateDbContext();
+        using var transaction = dbContext.Database.BeginTransaction();
+        var genericBankTransactionService = CreateBaseService(dbContext);
+        try
+        {
+            var result = genericBankTransactionService.Create(entity);
+            transaction.Commit();
+            return result;
+        }
+        catch (EntityUpdateException e)
+        {
+            transaction.Rollback();
+            throw new ServiceException($"Unable to create {nameof(BankTransaction)} in database: {e.Message}", _logger);
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            _logger.LogError(e, "Error during database update.");
+            throw;
+        }
+    }
+
     public override BankTransaction Update(BankTransaction entity)
     {
         // Several writes replace the Tags and Bucket assignments: all or none of them must be applied

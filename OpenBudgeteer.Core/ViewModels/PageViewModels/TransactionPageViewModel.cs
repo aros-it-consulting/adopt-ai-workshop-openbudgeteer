@@ -147,6 +147,10 @@ public class TransactionPageViewModel : TransactionListingViewModel
     /// <summary>
     /// Starts update process for all Transactions
     /// </summary>
+    /// <remarks>
+    /// Triggers <see cref="ViewModelOperationResult.ViewModelReloadRequired"/> on success, so that the Transactions
+    /// show the stored Tag names: a typed name can be stored as an existing Tag with another case
+    /// </remarks>
     /// <returns>Object which contains information and results of this method</returns>
     public ViewModelOperationResult SaveAllTransaction()
     {
@@ -157,7 +161,7 @@ public class TransactionPageViewModel : TransactionListingViewModel
                 var result = transaction.CreateOrUpdateTransaction();
                 if (!result.IsSuccessful) return new ViewModelOperationResult(false, result.Message);
             }
-            return new ViewModelOperationResult(true);
+            return new ViewModelOperationResult(true, true);
         }
         catch (ServiceException e)
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenBudgeteer.Core.Data.Entities.Models;
@@ -426,6 +427,28 @@ public class TransactionPageViewModelTest
     }
 
     [Fact]
+    public async Task SaveAllTransaction_RequestsReloadToShowTheStoredTagNames()
+    {
+        var serviceManager = new MockServiceManager(new MockDatabase());
+        var account = CreateTestAccount(serviceManager);
+        var viewModel = await LoadTransactionPageAsync(serviceManager);
+        viewModel.CreateItem(CreateTaggedTransaction(serviceManager, account, HotelMemo));
+        viewModel.CreateItem(CreateTaggedTransaction(serviceManager, account, TrainMemo));
+        await viewModel.LoadDataAsync();
+        viewModel.EditAllTransaction();
+
+        viewModel.Transactions.Single(transaction => transaction.Memo == HotelMemo).AddTag(ItalyTag);
+        viewModel.Transactions.Single(transaction => transaction.Memo == TrainMemo).AddTag(ItalyTag.ToUpper());
+        var result = viewModel.SaveAllTransaction();
+        await viewModel.LoadDataAsync();
+
+        var storedTagName = serviceManager.TagService.GetAll().Single().Name;
+        Assert.True(result.IsSuccessful);
+        Assert.True(result.ViewModelReloadRequired);
+        Assert.All(viewModel.Transactions, transaction => Assert.Equal(new[] { storedTagName }, transaction.Tags));
+    }
+
+    [Fact]
     public async Task CreateItem_FailsWithoutCreatingAnythingIfATagNameIsTooLong()
     {
         var serviceManager = new MockServiceManager(new MockDatabase());
@@ -453,6 +476,42 @@ public class TransactionPageViewModelTest
         transaction.AddTag(null);
 
         Assert.Equal(new[] { ItalyTag }, transaction.Tags);
+    }
+
+    [Fact]
+    public void AddTag_IgnoresAlreadyAssignedNameWithATurkishCulture()
+    {
+        var serviceManager = new MockServiceManager(new MockDatabase());
+        var transaction = TransactionViewModel.CreateEmpty(serviceManager);
+        var currentCulture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
+
+        try
+        {
+            transaction.AddTag(ItalyTag);
+            transaction.AddTag(ItalyTag.ToLowerInvariant());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = currentCulture;
+        }
+
+        Assert.Equal(new[] { ItalyTag }, transaction.Tags);
+    }
+
+    [Fact]
+    public void CancelModification_KeepsTheTransactionInASelection()
+    {
+        var serviceManager = new MockServiceManager(new MockDatabase());
+        var transaction = TransactionViewModel.CreateEmpty(serviceManager);
+        transaction.AddTag(ItalyTag);
+        var selectedTransactions = new HashSet<TransactionViewModel> { transaction };
+
+        transaction.StartModification();
+        transaction.AddTag(WorkTag);
+        transaction.CancelModification();
+
+        Assert.True(selectedTransactions.Remove(transaction));
     }
 
     [Fact]

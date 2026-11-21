@@ -34,7 +34,7 @@ public class TagListingViewModel : ViewModelBase
         try
         {
             Tags.Clear();
-            foreach (var tag in ServiceManager.TagService.GetAll())
+            foreach (var tag in ServiceManager.TagService.GetAllWithEntities())
             {
                 Tags.Add(TagViewModel.CreateFromTag(ServiceManager, tag));
             }

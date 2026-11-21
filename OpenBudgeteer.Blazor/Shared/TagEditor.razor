@@ -18,12 +18,14 @@
     </MudStack>
 
     <!-- New Tag: pick an existing Tag or create one from the typed text -->
+    <!-- No MaxItems limit: the "New Tag" entry comes last and would be cut off after 10 matching Tags -->
     <MudAutocomplete T="string"
                      @ref="_tagInput"
                      SearchFunc="SearchTagsAsync"
                      ValueChanged="AddTagAsync"
                      Dense="true"
                      Margin="Margin.Dense"
+                     MaxItems="null"
                      MaxLength="Tag.NameMaxLength"
                      Placeholder="Add Tag">
         <ItemTemplate>
@@ -49,7 +51,7 @@
         var typedTagName = searchText?.Trim() ?? string.Empty;
         var suggestions = AvailableTags
             .Where(tag => !DataContext.Tags.Contains(tag))
-            .Where(tag => tag.Contains(typedTagName, StringComparison.CurrentCultureIgnoreCase))
+            .Where(tag => tag.Contains(typedTagName, StringComparison.OrdinalIgnoreCase))
             .ToList();
         // Listed after the existing Tags, so that reusing an existing Tag stays the first choice
         if (typedTagName != string.Empty && IsNewTag(typedTagName)) suggestions.Add(typedTagName);
@@ -58,7 +60,7 @@
 
     private bool IsNewTag(string tagName)
     {
-        return !AvailableTags.Contains(tagName, StringComparer.CurrentCultureIgnoreCase);
+        return !AvailableTags.Contains(tagName, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task AddTagAsync(string? tagName)
