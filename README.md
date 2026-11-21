@@ -1,3 +1,5 @@
+> A training copy of [OpenBudgeteer](https://github.com/TheAxelander/OpenBudgeteer), kept for the workshops of the Adopt'AI training on agentic development. It is not the upstream project.
+
 <p align="center">
     <img alt="OpenBudgeteer banner" src="https://github.com/TheAxelander/OpenBudgeteer/blob/main/assets/banner.png?raw=true">
 </p>
