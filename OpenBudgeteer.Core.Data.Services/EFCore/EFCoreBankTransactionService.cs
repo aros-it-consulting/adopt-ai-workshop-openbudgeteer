@@ -26,7 +26,34 @@ public class EFCoreBankTransactionService : EFCoreBaseService<BankTransaction>, 
     {
         return new GenericBankTransactionService(
             new BankTransactionRepository(dbContext),
-            new BudgetedTransactionRepository(dbContext));
+            new BudgetedTransactionRepository(dbContext),
+            new TransactionTagRepository(dbContext),
+            new GenericTagService(new TagRepository(dbContext)));
+    }
+
+    public override BankTransaction Update(BankTransaction entity)
+    {
+        // Several writes replace the Tags and Bucket assignments: all or none of them must be applied
+        using var dbContext = _dbContextFactory.CreateDbContext();
+        using var transaction = dbContext.Database.BeginTransaction();
+        var genericBankTransactionService = CreateBaseService(dbContext);
+        try
+        {
+            var result = genericBankTransactionService.Update(entity);
+            transaction.Commit();
+            return result;
+        }
+        catch (EntityUpdateException e)
+        {
+            transaction.Rollback();
+            throw new ServiceException($"Unable to update {nameof(BankTransaction)} in database: {e.Message}", _logger);
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            _logger.LogError(e, "Error during database update.");
+            throw;
+        }
     }
 
     public BankTransaction GetWithEntities(Guid id)

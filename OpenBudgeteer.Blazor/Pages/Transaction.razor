@@ -199,6 +199,56 @@
         <!-- Memo -->
         <PropertyColumn Property="x => x.Memo"/>
 
+        <!-- Tags -->
+        <PropertyColumn Property="transaction => transaction.Tags"
+                        CellStyle="min-width: 200px"
+                        Sortable="false">
+            <CellTemplate>
+                <MudStack Row
+                          Spacing="1"
+                          Wrap="Wrap.Wrap">
+                    @foreach (var tag in context.Item.Tags)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Text="@tag"/>
+                    }
+                </MudStack>
+            </CellTemplate>
+            <EditTemplate>
+                <TagEditor DataContext="context.Item"
+                           AvailableTags="_dataContext.AvailableTags"/>
+            </EditTemplate>
+            <FilterTemplate>
+                <MudGrid Spacing="6"
+                         Style="width:430px">
+                    <MudItem xs="12">
+                        <MudSelect T="string"
+                                   @bind-SelectedValues="_tagMudFilter.SelectedItems"
+                                   MultiSelection="true"
+                                   MultiSelectionTextFunc="@(items => MultiSelectionTextHelper.GetText(items, "Tags"))"
+                                   SelectAll="true"
+                                   ToStringFunc="GetTagFilterText">
+                            @foreach (var tag in _tagMudFilter.AvailableItems)
+                            {
+                                <MudSelectItem Value="tag">@GetTagFilterText(tag)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem Class="d-flex justify-end"
+                             xs="12">
+                        <MudButton OnClick="@(() => _tagMudFilter.ResetFilterOnContextAsync(context))">
+                            Clear
+                        </MudButton>
+                        <MudButton OnClick="@(() => _tagMudFilter.ApplyFilterOnContextAsync(context))"
+                                   Color="@Color.Primary">
+                            Filter
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </FilterTemplate>
+        </PropertyColumn>
+
         <!-- Amount -->
         <PropertyColumn Property="x => x.Amount"
                         CellClass="col-numbers"

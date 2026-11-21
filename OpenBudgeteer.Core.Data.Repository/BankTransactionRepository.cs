@@ -20,6 +20,8 @@ public class BankTransactionRepository : IBankTransactionRepository
     
     public IQueryable<BankTransaction> AllWithIncludedEntities() => DatabaseContext.BankTransaction
         .Include(i => i.Account)
+        .Include(transaction => transaction.TransactionTags!)
+        .ThenInclude(transactionTag => transactionTag.Tag)
         .AsNoTracking();
 
     public BankTransaction? ById(Guid id) => DatabaseContext.BankTransaction
@@ -28,6 +30,8 @@ public class BankTransactionRepository : IBankTransactionRepository
     public BankTransaction? ByIdWithIncludedEntities(Guid id) => DatabaseContext.BankTransaction
         .Include(i => i.Account)
         .Include(i => i.BudgetedTransactions)
+        .Include(transaction => transaction.TransactionTags!)
+        .ThenInclude(transactionTag => transactionTag.Tag)
         .FirstOrDefault(i => i.Id == id);
 
     public int Create(BankTransaction entity)
@@ -58,6 +62,7 @@ public class BankTransactionRepository : IBankTransactionRepository
     {
         var entity = DatabaseContext.BankTransaction
             .Include(i => i.BudgetedTransactions)
+            .Include(transaction => transaction.TransactionTags)
             .FirstOrDefault(i => i.Id == id);
         if (entity is null) throw new Exception($"BankTransaction with id {id} not found.");
 
@@ -69,6 +74,7 @@ public class BankTransactionRepository : IBankTransactionRepository
     {
         var entities = DatabaseContext.BankTransaction
             .Include(i => i.BudgetedTransactions)
+            .Include(transaction => transaction.TransactionTags)
             .Where(i => ids.Contains(i.Id));
         if (!entities.Any()) throw new Exception($"No BankTransactions found with passed IDs.");
 

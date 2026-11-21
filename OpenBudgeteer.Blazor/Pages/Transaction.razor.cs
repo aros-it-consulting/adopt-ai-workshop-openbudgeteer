@@ -32,6 +32,8 @@ public partial class Transaction : ComponentBase
     private DateOnlyMudFilter<TransactionViewModel> _dateOnlyMudFilter = null!;
     private EntityViewModelMudFilter<AccountViewModel, TransactionViewModel> _accountMudFilter = null!;
     private EntityViewModelMudFilter<PartialBucketViewModel, TransactionViewModel> _bucketMudFilter = null!;
+    private EntityViewModelMudFilter<string, TransactionViewModel> _tagMudFilter = null!;
+    private const string NoTagFilterText = "No Tag";
     
     private HashSet<TransactionViewModel> _selectedTransactions = new();
 
@@ -53,6 +55,10 @@ public partial class Transaction : ComponentBase
         {
             FilterFunction = x => x.Buckets.Any(bucket => _bucketMudFilter.FilterItems.Contains(bucket))
         });
+        _tagMudFilter = new(new()
+        {
+            FilterFunction = transaction => transaction.HasAnyTag(_tagMudFilter.FilterItems)
+        });
 
         await ReloadDataContext();
 
@@ -66,6 +72,7 @@ public partial class Transaction : ComponentBase
     private async Task ReloadDataContext()
     {
         await HandleResult(await _dataContext.LoadDataAsync());
+        await HandleResult(_dataContext.LoadAvailableTags());
         _createTransactionDataContext = TransactionViewModel.CreateEmpty(ServiceManager);
         _createTransferDataContext = new(
             TransactionViewModel.CreateEmpty(ServiceManager),
@@ -88,6 +95,24 @@ public partial class Transaction : ComponentBase
         _accountMudFilter.ResetFilter();
         _dateOnlyMudFilter.ResetFilter();
         _bucketMudFilter.ResetFilter();
+        ResetTagFilter();
+    }
+
+    private void ResetTagFilter()
+    {
+        // "No Tag" is offered too, so that selecting every item shows every Transaction, like the other filters
+        _tagMudFilter.AvailableItems = _dataContext.Transactions
+            .SelectMany(transaction => transaction.Tags)
+            .Distinct()
+            .Order()
+            .Prepend(TransactionViewModel.NoTag)
+            .ToList();
+        _tagMudFilter.ResetFilter();
+    }
+
+    private static string GetTagFilterText(string tag)
+    {
+        return tag == TransactionViewModel.NoTag ? NoTagFilterText : tag;
     }
     
     private void TransactionDateChanged(DateTime? dateTime, TransactionViewModel context)
@@ -106,7 +131,8 @@ public partial class Transaction : ComponentBase
             _createTransactionDataContext.TransactionDate = lastEnteredDate;
             var createDialogParameters = new DialogParameters<CreateTransactionDialog>
             {
-                { x => x.DataContext, _createTransactionDataContext }
+                { x => x.DataContext, _createTransactionDataContext },
+                { dialog => dialog.AvailableTags, _dataContext.AvailableTags }
             };
             var createDialog = await DialogService.ShowAsync<CreateTransactionDialog>(
                 "Create Transactions", createDialogParameters);
@@ -290,6 +316,10 @@ public partial class Transaction : ComponentBase
     {
         _isEditModeEnabled = false;
         await HandleResult(_dataContext.SaveAllTransaction());
+
+        // Tags created by this save become suggestions and filter items without reloading the page
+        await HandleResult(_dataContext.LoadAvailableTags());
+        ResetTagFilter();
     }
 
     private async Task CancelAllTransaction()

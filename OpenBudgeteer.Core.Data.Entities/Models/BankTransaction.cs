@@ -24,4 +24,6 @@ public class BankTransaction : IEntity
     public decimal Amount { get; set; }
     
     public ICollection<BudgetedTransaction>? BudgetedTransactions { get; set; }
+
+    public ICollection<TransactionTag>? TransactionTags { get; set; }
 }

@@ -15,6 +15,7 @@ public class MockServiceManager : IServiceManager
     public IBudgetedTransactionService BudgetedTransactionService { get; }
     public IImportProfileService ImportProfileService { get; }
     public IRecurringBankTransactionService RecurringBankTransactionService { get; }
+    public ITagService TagService { get; }
     
     private readonly ILoggerFactory _loggerFactory;
 
@@ -29,6 +30,7 @@ public class MockServiceManager : IServiceManager
         BudgetedTransactionService = new MockBudgetedTransactionService(mockDatabase);
         ImportProfileService = new MockImportProfileService(mockDatabase);
         RecurringBankTransactionService = new MockRecurringBankTransactionService(mockDatabase);
+        TagService = new MockTagService(mockDatabase);
         
         _loggerFactory = LoggerFactory.Create(builder =>
         {

@@ -108,6 +108,22 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
     }
 
     /// <summary>
+    /// Stands for "no Tag" in a selection of Tag names, to also select Transactions which have no Tag.
+    /// Can't be mistaken for a Tag, as a Tag name cannot be empty
+    /// </summary>
+    public const string NoTag = "";
+
+    private ObservableCollection<string> _tags;
+    /// <summary>
+    /// Names of the Tags assigned to this Transaction
+    /// </summary>
+    public ObservableCollection<string> Tags
+    {
+        get => _tags;
+        set => Set(ref _tags, value);
+    }
+
+    /// <summary>
     /// Helper collection to list all existing Account
     /// </summary>
     public readonly ObservableCollection<AccountViewModel> AvailableAccounts;
@@ -137,6 +153,7 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         BankTransaction? transaction) : base(serviceManager, serviceManager.CreateLogger(typeof(TransactionViewModel)))
     {
         _buckets = new();
+        _tags = new ObservableCollection<string>(GetTagNames(transaction));
         _availableBuckets = new();
         AvailableAccounts = new ObservableCollection<AccountViewModel>();
         
@@ -262,6 +279,8 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         {
             _buckets.Add((PartialBucketViewModel)bucket.Clone());
         }
+
+        _tags = new ObservableCollection<string>(viewModel.Tags);
         
         // Handle Available Accounts
         AvailableAccounts = new ObservableCollection<AccountViewModel>();
@@ -402,6 +421,15 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         return new TransactionViewModel(this);
     }
 
+    private static IEnumerable<string> GetTagNames(BankTransaction? transaction)
+    {
+        var transactionTags = transaction?.TransactionTags ?? [];
+        return transactionTags
+            .Select(transactionTag => transactionTag.Tag?.Name)
+            .OfType<string>()
+            .Order();
+    }
+
     #endregion
     
     #region Modification Handler
@@ -415,7 +443,10 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
             TransactionDate = TransactionDate,
             Payee = Payee,
             Memo = Memo,
-            Amount = Amount
+            Amount = Amount,
+            TransactionTags = Tags
+                .Select(tagName => new TransactionTag { Tag = new Tag { Name = tagName } })
+                .ToList()
         };
     }
     
@@ -452,6 +483,38 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         Buckets.Add(newBucketItem);
     }
     
+    /// <summary>
+    /// Assigns a Tag to the Transaction, unless it already has a Tag with that name (ignoring case)
+    /// </summary>
+    /// <param name="tagName">Name of an existing Tag or of a Tag to create on save</param>
+    public void AddTag(string? tagName)
+    {
+        if (string.IsNullOrWhiteSpace(tagName)) return;
+        var cleanTagName = tagName.Trim();
+        if (Tags.Contains(cleanTagName, StringComparer.CurrentCultureIgnoreCase)) return;
+        Tags.Add(cleanTagName);
+    }
+
+    /// <summary>
+    /// Removes a Tag from the Transaction
+    /// </summary>
+    /// <param name="tagName">Name of the Tag</param>
+    public void RemoveTag(string tagName)
+    {
+        Tags.Remove(tagName);
+    }
+
+    /// <summary>
+    /// Checks if the Transaction has at least one of the passed Tags
+    /// </summary>
+    /// <param name="tagNames">Tag names, including <see cref="NoTag"/> to also match a Transaction without Tag</param>
+    /// <returns>True if the Transaction matches one of the passed names</returns>
+    public bool HasAnyTag(IReadOnlyCollection<string> tagNames)
+    {
+        if (Tags.Count == 0) return tagNames.Contains(NoTag);
+        return Tags.Any(tagNames.Contains);
+    }
+
     /// <summary>
     /// Event that checks amount for all assigned Buckets and creates or removes an "empty item"
     /// </summary>
@@ -642,6 +705,7 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         {
             Buckets.Add(bucket);
         }
+        Tags = _oldTransactionViewModelItem.Tags;
         InModification = false;
         _oldTransactionViewModelItem = null;
     }
@@ -722,7 +786,8 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
             _payee == other._payee && 
             _memo == other._memo && 
             _amount == other._amount && 
-            _buckets.Equals(other._buckets);
+            _buckets.Equals(other._buckets) &&
+            _tags.Equals(other._tags);
     }
 
     public override bool Equals(object? obj)
@@ -743,6 +808,7 @@ public class TransactionViewModel : BaseEntityViewModel<BankTransaction>, IEquat
         hashCode.Add(_memo);
         hashCode.Add(_amount);
         hashCode.Add(_buckets);
+        hashCode.Add(_tags);
         return hashCode.ToHashCode();
     }
     

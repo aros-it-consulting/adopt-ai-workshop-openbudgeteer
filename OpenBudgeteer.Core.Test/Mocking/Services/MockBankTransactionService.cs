@@ -7,7 +7,9 @@ public class MockBankTransactionService : GenericBankTransactionService
 {
     public MockBankTransactionService(MockDatabase mockDatabase) : base(
         new MockBankTransactionRepository(mockDatabase),
-        new MockBudgetedTransactionRepository(mockDatabase))
+        new MockBudgetedTransactionRepository(mockDatabase),
+        new MockTransactionTagRepository(mockDatabase),
+        new MockTagService(mockDatabase))
     {
     }
 }

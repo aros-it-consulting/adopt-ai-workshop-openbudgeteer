@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -54,6 +55,16 @@ public class TransactionPageViewModel : TransactionListingViewModel
         protected set => Set(ref _transactions, value);
     }
     
+    private List<string> _availableTags;
+    /// <summary>
+    /// Names of all existing Tags, to suggest them while tagging a Transaction
+    /// </summary>
+    public List<string> AvailableTags
+    {
+        get => _availableTags;
+        private set => Set(ref _availableTags, value);
+    }
+
     /// <summary>
     /// EventHandler which should be invoked during Bucket Proposal to track overall Progress
     /// </summary>
@@ -73,7 +84,30 @@ public class TransactionPageViewModel : TransactionListingViewModel
     {
         _yearMonthViewModel = yearMonthViewModel;
         _transactions = new ObservableCollection<TransactionViewModel>();
+        _availableTags = [];
         //_yearMonthViewModel.SelectedYearMonthChanged += (sender) => { LoadData(); };
+    }
+
+    /// <summary>
+    /// Loads the names of all existing Tags into <see cref="AvailableTags"/>
+    /// </summary>
+    /// <returns>Object which contains information and results of this method</returns>
+    public ViewModelOperationResult LoadAvailableTags()
+    {
+        try
+        {
+            AvailableTags = ServiceManager.TagService.GetAll().Select(tag => tag.Name).ToList();
+            return new ViewModelOperationResult(true);
+        }
+        catch (ServiceException e)
+        {
+            return new ViewModelOperationResult(false, e.Message);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "An unexpected error occurred.");
+            return new ViewModelOperationResult(false, "An unexpected error occurred. Please check the logs for more details.");
+        }
     }
     
     /// <summary>

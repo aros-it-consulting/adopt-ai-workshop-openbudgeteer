@@ -17,7 +17,7 @@ namespace OpenBudgeteer.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.3")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -361,6 +361,49 @@ namespace OpenBudgeteer.Data.Migrations
                     b.ToTable("RecurringBankTransaction");
                 });
 
+            modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("TagId");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Tag");
+                });
+
+            modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.TransactionTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("TransactionTagId");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TagId");
+
+                    b.HasIndex("TransactionId", "TagId")
+                        .IsUnique();
+
+                    b.ToTable("TransactionTag");
+                });
+
             modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.BankTransaction", b =>
                 {
                     b.HasOne("OpenBudgeteer.Core.Data.Entities.Models.Account", "Account")
@@ -468,9 +511,30 @@ namespace OpenBudgeteer.Data.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.TransactionTag", b =>
+                {
+                    b.HasOne("OpenBudgeteer.Core.Data.Entities.Models.Tag", "Tag")
+                        .WithMany("TransactionTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OpenBudgeteer.Core.Data.Entities.Models.BankTransaction", "Transaction")
+                        .WithMany("TransactionTags")
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tag");
+
+                    b.Navigation("Transaction");
+                });
+
             modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.BankTransaction", b =>
                 {
                     b.Navigation("BudgetedTransactions");
+
+                    b.Navigation("TransactionTags");
                 });
 
             modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.Bucket", b =>
@@ -490,6 +554,11 @@ namespace OpenBudgeteer.Data.Migrations
             modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.BucketRuleSet", b =>
                 {
                     b.Navigation("MappingRules");
+                });
+
+            modelBuilder.Entity("OpenBudgeteer.Core.Data.Entities.Models.Tag", b =>
+                {
+                    b.Navigation("TransactionTags");
                 });
 #pragma warning restore 612, 618
         }
